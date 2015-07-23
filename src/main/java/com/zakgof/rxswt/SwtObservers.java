@@ -4,6 +4,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseTrackListener;
@@ -14,6 +15,7 @@ import org.eclipse.swt.events.TraverseListener;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 
 import rx.Observable;
 import rx.subscriptions.Subscriptions;
@@ -28,8 +30,7 @@ public class SwtObservers {
   public static Observable<DisposeEvent> fromDisposeListener(Control control) {
     Observable<DisposeEvent> observable = Observable.create(subscriber -> control.addDisposeListener(event -> {
       subscriber.onNext(event);
-      subscriber.onCompleted();
-      subscriber.unsubscribe(); // TODO
+      subscriber.onCompleted();      
     }));
     return observable.subscribeOn(SwtScheduler.getInstance()).unsubscribeOn(SwtScheduler.getInstance());
   }
@@ -180,6 +181,16 @@ public class SwtObservers {
   private static <E> Observable<E> wrap(Control control, Observable<E> observable) {
     Observable<DisposeEvent> disposeObservable = fromDisposeListener(control);
     return Observable.merge(observable.subscribeOn(SwtScheduler.getInstance()).unsubscribeOn(SwtScheduler.getInstance()), disposeObservable.filter(i -> false).map(i -> null));
+  }
+  
+  public static Observable<String> fromModifyListener(Text text) {
+    text.addModifyListener(listener -> text.getText());
+    Observable<String> observable = Observable.create(subscriber -> {
+      ModifyListener modifyListener = event -> subscriber.onNext(text.getText());
+      text.addModifyListener(modifyListener);
+      subscriber.add(Subscriptions.create(() -> text.removeModifyListener(modifyListener)));
+    });
+    return wrap(text, observable);
   }
 
 }
