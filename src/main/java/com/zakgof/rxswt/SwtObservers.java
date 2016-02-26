@@ -8,14 +8,19 @@ import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseTrackListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.events.TraverseEvent;
 import org.eclipse.swt.events.TraverseListener;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.eclipse.swt.widgets.Widget;
 
 import rx.Observable;
 import rx.subscriptions.Subscriptions;
@@ -27,7 +32,7 @@ public class SwtObservers {
     return observable.subscribeOn(SwtScheduler.getInstance());
   }
 
-  public static Observable<DisposeEvent> fromDisposeListener(Control control) {
+  public static Observable<DisposeEvent> fromDisposeListener(Widget control) {
     Observable<DisposeEvent> observable = Observable.create(subscriber -> control.addDisposeListener(event -> {
       subscriber.onNext(event);
       subscriber.onCompleted();      
@@ -177,8 +182,21 @@ public class SwtObservers {
     });
     return wrap(control, observable);
   }
+  
+  public static Observable<SelectionEvent> fromSelectionListener(MenuItem item) {
+    Observable<SelectionEvent> observable = Observable.create(subscriber -> {
+      SelectionListener selectionListener = new SelectionAdapter() {
+        public void widgetSelected(SelectionEvent e) {
+          subscriber.onNext(e);
+        }
+      };
+    item.addSelectionListener(selectionListener);
+    subscriber.add(Subscriptions.create(() -> item.removeSelectionListener(selectionListener)));    
+    });
+    return wrap(item, observable);
+  }
 
-  private static <E> Observable<E> wrap(Control control, Observable<E> observable) {
+  private static <E> Observable<E> wrap(Widget control, Observable<E> observable) {
     Observable<DisposeEvent> disposeObservable = fromDisposeListener(control);
     return Observable.merge(observable.subscribeOn(SwtScheduler.getInstance()).unsubscribeOn(SwtScheduler.getInstance()), disposeObservable.filter(i -> false).map(i -> null));
   }
