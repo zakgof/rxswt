@@ -4,6 +4,9 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.ControlEvent;
 import org.eclipse.swt.events.ControlListener;
 import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
@@ -120,6 +123,20 @@ public class SwtObservers {
       };
       control.addMouseListener(mouseListener);
       subscriber.add(Subscriptions.create(() -> control.removeMouseListener(mouseListener)));
+    });
+    return wrap(control, observable);
+  }
+  
+  public static Observable<KeyEvent> fromKeyListener(Control control) {
+    Observable<KeyEvent> observable = Observable.create(subscriber -> {
+      KeyListener keyListener = new KeyAdapter() {
+        @Override
+        public void keyPressed(KeyEvent e) {
+            subscriber.onNext(e);
+        }
+      };
+      control.addKeyListener(keyListener);
+      subscriber.add(Subscriptions.create(() -> control.removeKeyListener(keyListener)));
     });
     return wrap(control, observable);
   }
