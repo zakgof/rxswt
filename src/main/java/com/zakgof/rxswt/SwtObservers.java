@@ -11,6 +11,7 @@ import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseTrackListener;
+import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
@@ -93,6 +94,15 @@ public class SwtObservers {
       };
       control.addMouseTrackListener(mouseTrackListener);
       subscriber.add(Subscriptions.create(() -> control.removeMouseTrackListener(mouseTrackListener)));
+    });
+    return wrap(control, observable);
+  }
+
+  public static Observable<MouseEvent> fromMouseWheelListener(Control control) {
+    Observable<MouseEvent> observable = Observable.create(subscriber -> {
+      MouseWheelListener wheelListener = e -> subscriber.onNext(e);
+      control.addMouseWheelListener(wheelListener);
+      subscriber.add(Subscriptions.create(() -> control.removeMouseWheelListener(wheelListener)));
     });
     return wrap(control, observable);
   }
@@ -186,6 +196,10 @@ public class SwtObservers {
       subscriber.add(Subscriptions.create(() -> shell.removeShellListener(shellListener)));
     });
     return wrap(shell, observable);
+  }
+  
+  public static Observable<TraverseEvent> fromTraverseListener(Control control, int character) {
+    return fromTraverseListener(control).filter(e -> e.character == character);
   }
 
   public static Observable<TraverseEvent> fromTraverseListener(Control control) {
