@@ -23,6 +23,8 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Table;
+import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Widget;
 
@@ -39,7 +41,7 @@ public class SwtObservers {
   public static Observable<DisposeEvent> fromDisposeListener(Widget control) {
     Observable<DisposeEvent> observable = Observable.create(subscriber -> control.addDisposeListener(event -> {
       subscriber.onNext(event);
-      subscriber.onCompleted();      
+      subscriber.onCompleted();
     }));
     return observable.subscribeOn(SwtScheduler.getInstance()).unsubscribeOn(SwtScheduler.getInstance());
   }
@@ -198,8 +200,8 @@ public class SwtObservers {
     return wrap(shell, observable);
   }
   
-  public static Observable<TraverseEvent> fromTraverseListener(Control control, int character) {
-    return fromTraverseListener(control).filter(e -> e.character == character);
+  public static Observable<TraverseEvent> fromTraverseListener(Control control, int traverse) {
+    return fromTraverseListener(control).filter(e -> e.detail == traverse);
   }
 
   public static Observable<TraverseEvent> fromTraverseListener(Control control) {
@@ -222,9 +224,22 @@ public class SwtObservers {
         }
       };
     item.addSelectionListener(selectionListener);
-    subscriber.add(Subscriptions.create(() -> item.removeSelectionListener(selectionListener)));    
+    subscriber.add(Subscriptions.create(() -> item.removeSelectionListener(selectionListener)));
     });
     return wrap(item, observable);
+  }
+
+  public static Observable<TableItem> fromSelectionListener(Table table) {
+    Observable<TableItem> observable = Observable.create(subscriber -> {
+      SelectionListener selectionListener = new SelectionAdapter() {
+        public void widgetSelected(SelectionEvent e) {
+          subscriber.onNext((TableItem)e.item);
+        }
+      };
+    table.addSelectionListener(selectionListener);
+    subscriber.add(Subscriptions.create(() -> table.removeSelectionListener(selectionListener)));
+    });
+    return wrap(table, observable);
   }
 
   private static <E> Observable<E> wrap(Widget control, Observable<E> observable) {
