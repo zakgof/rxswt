@@ -44,6 +44,8 @@ public class SwtScheduler extends Scheduler {
 
     @Override
     public Subscription schedule(Action0 action) {
+      if (Display.getCurrent() != null)
+        return schedule(action, Runnable::run);
       return schedule(action, runnable -> Display.getDefault().asyncExec(runnable));
     }
 

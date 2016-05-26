@@ -19,6 +19,7 @@ import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.events.ShellListener;
 import org.eclipse.swt.events.TraverseEvent;
 import org.eclipse.swt.events.TraverseListener;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.MenuItem;
@@ -227,6 +228,19 @@ public class SwtObservers {
     subscriber.add(Subscriptions.create(() -> item.removeSelectionListener(selectionListener)));
     });
     return wrap(item, observable);
+  }
+
+  public static Observable<SelectionEvent> fromSelectionListener(Button button) {
+    Observable<SelectionEvent> observable = Observable.create(subscriber -> {
+      SelectionListener selectionListener = new SelectionAdapter() {
+        public void widgetSelected(SelectionEvent e) {
+          subscriber.onNext(e);
+        }
+      };
+      button.addSelectionListener(selectionListener);
+    subscriber.add(Subscriptions.create(() -> button.removeSelectionListener(selectionListener)));
+    });
+    return wrap(button, observable);
   }
 
   public static Observable<TableItem> fromSelectionListener(Table table) {
