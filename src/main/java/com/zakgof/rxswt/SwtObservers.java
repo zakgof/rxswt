@@ -12,6 +12,8 @@ import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.MouseTrackListener;
 import org.eclipse.swt.events.MouseWheelListener;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
@@ -269,6 +271,15 @@ public class SwtObservers {
       subscriber.add(Subscriptions.create(() -> text.removeModifyListener(modifyListener)));
     });
     return wrap(text, observable);
+  }
+
+  public static Observable<PaintEvent> fromPaintListener(Control control) {
+    Observable<PaintEvent> observable = Observable.create(subscriber -> {
+      PaintListener paintListener = e -> subscriber.onNext(e);
+      control.addPaintListener(paintListener);
+      subscriber.add(Subscriptions.create(() -> control.removePaintListener(paintListener)));
+    });
+    return wrap(control, observable);
   }
 
 }
