@@ -5,11 +5,10 @@ import java.util.function.Consumer;
 
 import org.eclipse.swt.widgets.Display;
 
-import rx.Scheduler;
-import rx.Subscription;
-import rx.functions.Action0;
-import rx.subscriptions.BooleanSubscription;
-import rx.subscriptions.CompositeSubscription;
+import io.reactivex.Scheduler;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.internal.subscriptions.BooleanSubscription;
 
 /**
  * Scheduler that executes units of work on SWT UI thread.
@@ -32,36 +31,36 @@ public class SwtScheduler extends Scheduler {
 
   private static class SwtWorker extends Worker {
 
-    private final CompositeSubscription workerSubscription = new CompositeSubscription();
+    private final CompositeDisposable workerSubscription = new CompositeDisposable();
 
-    public void unsubscribe() {
-      workerSubscription.unsubscribe();
+    public void dispose() {
+      workerSubscription.dispose();
     }
 
-    public boolean isUnsubscribed() {
-      return workerSubscription.isUnsubscribed();
+    public boolean isDisposed() {
+      return workerSubscription.isDisposed();
     }
 
     @Override
-    public Subscription schedule(Action0 action) {
+    public Disposable schedule(Runnable action) {
       if (Display.getCurrent() != null)
         return schedule(action, Runnable::run);
       return schedule(action, runnable -> Display.getDefault().asyncExec(runnable));
     }
 
     @Override
-    public Subscription schedule(Action0 action, long delayTime, TimeUnit unit) {
+    public Disposable schedule(Runnable action, long delayTime, TimeUnit unit) {
       // TODO : assert millis range
       int millis = (int) unit.toMillis(delayTime);
       return schedule(action, runnable -> Display.getDefault().timerExec(millis, runnable));
     }
 
-    private Subscription schedule(Action0 action, Consumer<Runnable> executor) {
-      final Subscription childSubscription = BooleanSubscription.create();
+    private Disposable schedule(Runnable action, Consumer<Runnable> executor) {
+      final Disposable childSubscription = new BooleanSubscription();
       workerSubscription.add(childSubscription);
       executor.accept(() -> {
-        if (!childSubscription.isUnsubscribed() && !workerSubscription.isUnsubscribed()) {
-          action.call();
+        if (!childSubscription.isDisposed() && !workerSubscription.isDisposed()) {
+          action.run();
         }
         workerSubscription.remove(childSubscription);
       });
