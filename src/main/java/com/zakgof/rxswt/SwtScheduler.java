@@ -53,7 +53,10 @@ public class SwtScheduler extends Scheduler {
         public Disposable schedule(Runnable action, long delayTime, TimeUnit unit) {
             // TODO : assert millis range
             int millis = (int) unit.toMillis(delayTime);
-            return schedule(action, runnable -> Display.getDefault().timerExec(millis, runnable));
+            return schedule(action, runnable -> {
+                Display display = Display.getDefault();
+                display.asyncExec(() -> display.timerExec(millis, runnable));
+            });
         }
 
         private Disposable schedule(Runnable action, Consumer<Runnable> executor) {
